@@ -54,6 +54,12 @@ El workflow `.github/workflows/deploy-pages.yml` compila, prueba y publica `dist
 
 La primera publicación se realiza desde el repositorio público contenedor `Clorin9/Clorin9`, porque el conector autorizado permite escribir en repositorios existentes pero no crear uno nuevo. El código está preparado para migrarse posteriormente a `Clorin9/sigpi-paraguay` cambiando `VITE_BASE_PATH` a `/sigpi-paraguay/`.
 
+- Repositorio público: https://github.com/Clorin9/Clorin9
+- Aplicación pública: https://sigpi-paraguay-2026.condeclo.chatgpt.site
+- Estado: versión 1 desplegada con acceso público.
+
+La ejecución de GitHub Actions aprobó instalación, build y pruebas. GitHub Pages no pudo activarse automáticamente porque esa configuración administrativa no está disponible para el conector; por ello, la versión pública se sirve mediante Sites con la misma compilación verificada.
+
 ## Protección de datos
 
 No introducir datos personales, expedientes administrativos, documentos de clientes, credenciales ni secretos. GitHub Pages es público y no ofrece backend ni control de acceso. Para operación institucional se requiere el backend descrito en [Arquitectura](docs/ARQUITECTURA.md).
