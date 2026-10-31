@@ -70,6 +70,7 @@ No introducir datos personales, expedientes administrativos, documentos de clien
 - [Módulos y pendientes](docs/MODULOS_Y_PENDIENTES.md)
 - [Recuperación y diferencias](docs/RECUPERACION_Y_DIFERENCIAS.md)
 - [Pruebas](docs/PRUEBAS.md)
+- [Ubicaciones GIS](docs/UBICACIONES_GIS.md)
 - [Mantenimiento](docs/MANTENIMIENTO.md)
 - [Seguridad](SECURITY.md)
 
