@@ -35,5 +35,8 @@ Los resultados ejecutados se actualizan al cierre de cada publicación. No se de
 - Búsqueda local de patrones de secretos: sin credenciales detectadas; el permiso `id-token: write` del workflow es configuración esperada de GitHub Pages.
 - QA visual original de Opción C: recuperado como evidencia histórica en `design-qa.md`.
 - QA E2E de la v0.3: preparado en `scripts/browser-smoke.mjs`, no ejecutado en este entorno porque el navegador cloud no accede al servidor local y la descarga del binario Chromium fue bloqueada por la red del entorno.
-- Publicación y acceso externo: pendientes hasta que exista el repositorio GitHub.
+- Repositorio público: verificado en `Clorin9/Clorin9`, rama `main`.
+- GitHub Actions: instalación, build y 8 pruebas aprobadas; el paso `configure-pages` falló porque GitHub Pages no estaba habilitado administrativamente.
+- Publicación alternativa: versión 1 desplegada correctamente mediante Sites.
+- Acceso público: `https://sigpi-paraguay-2026.condeclo.chatgpt.site`, estado activo y audiencia pública verificados por el servicio de alojamiento.
 
