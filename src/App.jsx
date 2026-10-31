@@ -135,7 +135,7 @@ function AdminView({ state, restoreDefaults, importBackup }) {
 
 function migrateParkCoordinates(records) {
   const verifiedById = new Map(historicalParks.map((park) => [park.id, park.coordinates]));
-  return records.map((park) => park.coordinates ? park : { ...park, coordinates: verifiedById.get(park.id) });
+  return records.map((park) => ({ ...park, coordinates: verifiedById.get(park.id) || park.coordinates }));
 }
 
 export function App() {
