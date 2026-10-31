@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages_enabled: ${{ steps.pages.outcome == 'success' }}
     env:
       # Repositorio contenedor actual. Al migrar a sigpi-paraguay, cambiar a /sigpi-paraguay/.
       VITE_BASE_PATH: /Clorin9/
@@ -28,12 +30,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - id: pages
+        continue-on-error: true
+        uses: actions/configure-pages@v5
+      - if: steps.pages.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist/client
 
   deploy:
+    if: needs.build.outputs.pages_enabled == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
