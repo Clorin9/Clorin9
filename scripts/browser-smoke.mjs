@@ -28,7 +28,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await desktop.goto(`http://127.0.0.1:${port}`, { waitUntil: "networkidle" });
-  await desktop.getByRole("heading", { name: "Dashboard de gestión" }).waitFor();
+  await desktop.getByText("Parques industriales del Paraguay", { exact: true }).waitFor();
   await desktop.getByRole("button", { name: /Público/ }).click();
   await desktop.getByRole("button", { name: "Proyectos" }).click();
   await desktop.getByRole("button", { name: /Nuevo proyecto/ }).click();
@@ -49,7 +49,7 @@ try {
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   await mobile.goto(`http://127.0.0.1:${port}`, { waitUntil: "networkidle" });
-  await mobile.getByRole("heading", { name: "Dashboard de gestión" }).waitFor();
+  await mobile.getByText("Parques industriales del Paraguay", { exact: true }).waitFor();
   await mobile.getByRole("button", { name: "Parques" }).click();
   await mobile.getByRole("heading", { name: "Inventario territorial" }).waitFor();
   await mobile.screenshot({ path: join(artifacts, "sigpi-mobile.png"), fullPage: true });

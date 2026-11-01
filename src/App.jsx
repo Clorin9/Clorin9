@@ -3,12 +3,13 @@ import L from "leaflet";
 import { CircleMarker, GeoJSON, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  ArrowClockwise, Briefcase, Buildings, ChartBar, CheckCircle, ClipboardText,
+  ArrowClockwise, ArrowRight, Briefcase, Buildings, ChartBar, ChartDonut, CheckCircle, ClipboardText, Crosshair,
   CurrencyDollar, Database, DownloadSimple, Eye, EyeSlash, Factory, FileText,
   FolderOpen, Funnel, Gear, Info, ListChecks, LockKey, MagnifyingGlass,
-  MapTrifold, PencilSimple, Plus, ShieldCheck, SquaresFour, Trash, UploadSimple,
+  MapPin, MapTrifold, PencilSimple, Plus, ShieldCheck, SquaresFour, Stack, Trash, TrendUp, UploadSimple,
   UsersThree, Warning, X,
 } from "@phosphor-icons/react";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
 import { demoDocuments, demoProjects, evaluationCriteria, historicalParks, initialEvaluations, paraguayDepartments, parkCharacters } from "./data.js";
 import { downloadText, formatCurrency, formatNumber, loadLocal, parseGeoJson, safeId, saveLocal, summarizeEvaluations, toCsv } from "./lib.js";
 
@@ -30,24 +31,121 @@ function Modal({ title, children, onClose }) {
 }
 
 function Sidebar({ active, setActive, publicMode }) {
-  return <aside className="sidebar"><div className="brand"><MapTrifold size={32} weight="duotone" /><div><strong>SIGPI</strong><span>Sistema Integral de Gestión de Parques Industriales</span></div></div><nav aria-label="Navegación principal">{navItems.filter(([, , , isPublic]) => !publicMode || isPublic).map(([id, label, Icon]) => <button key={id} className={active === id ? "active" : ""} onClick={() => setActive(id)}><Icon size={21} weight={active === id ? "fill" : "regular"} /><span>{label}</span></button>)}</nav><div className="sidebar-footer"><DataState type={publicMode ? "calculated" : "pending"}>{publicMode ? "Vista pública" : "Gestión interna demo"}</DataState><span>Base histórica · {sourceCut}</span><small>Versión recuperada y ampliada v0.3</small></div></aside>;
+  return <aside className="sidebar"><div className="brand"><MapTrifold size={30} weight="duotone" /><div><strong>SIGPI</strong><span>Paraguay</span></div></div><nav aria-label="Navegación principal">{navItems.filter(([, , , isPublic]) => !publicMode || isPublic).map(([id, label, Icon]) => <button key={id} className={active === id ? "active" : ""} onClick={() => setActive(id)} title={label}><Icon size={22} weight={active === id ? "fill" : "regular"} /><span>{label}</span></button>)}</nav><div className="sidebar-footer"><DataState type={publicMode ? "calculated" : "pending"}>{publicMode ? "Público" : "Interno"}</DataState><span>Base {sourceCut}</span><small>v0.4</small></div></aside>;
 }
 
 function Header({ search, setSearch, publicMode, setPublicMode }) {
-  return <header className="topbar"><div className="topbar-title">Información, gestión y seguimiento territorial</div><div className="source-date"><span>Corte de la base histórica</span><strong>{sourceCut}</strong></div><label className="search-control"><MagnifyingGlass size={18} weight="bold" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar en parques y proyectos…" aria-label="Buscar" />{search && <button className="icon-button" onClick={() => setSearch("")} aria-label="Limpiar búsqueda"><X size={16} /></button>}</label><button className="mode-switch" onClick={() => setPublicMode((value) => !value)} title="Alternar vista pública y gestión local demostrativa">{publicMode ? <Eye size={18} /> : <EyeSlash size={18} />}<span>{publicMode ? "Público" : "Interno demo"}</span></button></header>;
+  return <header className="topbar"><div className="topbar-title"><strong>SIGPI Paraguay · Centro de Comando Industrial</strong><span>Inteligencia territorial para la inversión industrial</span></div><label className="search-control"><MagnifyingGlass size={18} weight="bold" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar parques, proyectos o distritos…" aria-label="Buscar" />{search && <button className="icon-button" onClick={() => setSearch("")} aria-label="Limpiar búsqueda"><X size={16} /></button>}</label><div className="source-date"><span>Actualización de interfaz</span><strong>1 nov 2026</strong></div><button className="mode-switch" onClick={() => setPublicMode((value) => !value)} title="Alternar vista pública y gestión local demostrativa">{publicMode ? <Eye size={18} /> : <EyeSlash size={18} />}<span>{publicMode ? "Público" : "Interno demo"}</span></button></header>;
 }
 
 function SourceBand({ message }) { return <section className="source-band"><div><Info size={18} weight="fill" /> Modo demostración con base histórica recuperada</div><span>{message}</span><div className="state-legend"><DataState type="official">Histórico</DataState><DataState type="calculated">Calculado</DataState><DataState type="pending">Pendiente</DataState></div></section>; }
 function Kpi({ Icon, value, label, note, state = "calculated" }) { return <article className="stat-card"><div className="stat-icon"><Icon size={24} weight="duotone" /></div><div><strong>{value}</strong><span>{label}</span><small>{note}</small></div><DataState type={state}>{state === "official" ? "Histórico" : "Demo"}</DataState></article>; }
 
-function Dashboard({ parks, projects, documents, evaluations, setActive }) {
+const chartColors = ["#27dce3", "#28d17c", "#f4bd3d", "#7399b7", "#b488ff"];
+
+function ParaguayViewport() {
+  const map = useMap();
+  useEffect(() => { map.fitBounds([[-27.65, -62.68], [-19.28, -54.16]], { padding: [18, 18] }); }, [map]);
+  return null;
+}
+
+function CommandMap({ parks, selected, setSelected, showMarkers = true }) {
+  const mappedParks = parks.filter(validCoordinates);
+  return <div className="command-map" aria-label="Centro de comando geográfico de parques industriales">
+    <MapContainer center={[-23.45, -58.35]} zoom={5} minZoom={4} maxZoom={18} scrollWheelZoom className="command-leaflet">
+      <TileLayer attribution="Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics" maxZoom={19} url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+      <TileLayer attribution="Reference &copy; Esri" maxZoom={19} url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
+      <ParaguayViewport />
+      {showMarkers && mappedParks.map((park) => {
+        const active = selected?.id === park.id;
+        const point = [Number(park.coordinates.lat), Number(park.coordinates.lon)];
+        return <CircleMarker key={park.id} center={point} radius={active ? 12 : 8} pathOptions={{ color: active ? "#ffffff" : "#8df9ff", weight: active ? 4 : 2, fillColor: active ? "#26dce4" : markerColor(park), fillOpacity: 1 }} eventHandlers={{ click: () => setSelected(park) }}>
+          <Tooltip direction="top" offset={[0, -9]}>{park.short}</Tooltip>
+        </CircleMarker>;
+      })}
+    </MapContainer>
+    <div className="map-command-badge"><Crosshair size={16} weight="bold" /> WGS84 · coordenadas documentales verificadas</div>
+  </div>;
+}
+
+function Dashboard({ parks, projects, setActive, selected, setSelected }) {
+  const [department, setDepartment] = useState("Todos");
+  const [character, setCharacter] = useState("Todos");
+  const [showMarkers, setShowMarkers] = useState(true);
+  const [viewMode, setViewMode] = useState("mapa");
+  const [rightMode, setRightMode] = useState("oportunidades");
+
+  const filtered = useMemo(() => parks.filter((park) => (department === "Todos" || park.department === department) && (character === "Todos" || park.character === character)), [parks, department, character]);
+  const activePark = filtered.find((park) => park.id === selected?.id) || filtered[0] || parks[0];
   const surface = parks.reduce((sum, park) => sum + Number(park.surface || 0), 0);
-  const investment = projects.reduce((sum, project) => sum + Number(project.investment || 0), 0);
   const departments = new Set(parks.map((park) => park.department)).size;
-  const byDepartment = Object.entries(parks.reduce((acc, park) => ({ ...acc, [park.department]: (acc[park.department] || 0) + 1 }), {})).sort((a, b) => b[1] - a[1]);
-  const max = Math.max(...byDepartment.map(([, count]) => count), 1);
-  const projectAverage = projects.length ? Math.round(projects.reduce((sum, project) => sum + Number(project.progress || 0), 0) / projects.length) : 0;
-  return <><PageHeading eyebrow="Panel institucional" title="Dashboard de gestión" actions={<DataState type="pending">Datos operativos ficticios identificados</DataState>} /><div className="stats-grid"><Kpi Icon={Database} value={parks.length} label="parques en la base" note={`Registro histórico con corte ${sourceCut}`} state="official" /><Kpi Icon={MapTrifold} value={`${formatNumber(surface, { maximumFractionDigits: 2 })} ha`} label="superficie registrada" note="Suma calculada de la base" /><Kpi Icon={Briefcase} value={projects.length} label="proyectos demostrativos" note={`${projectAverage}% de avance medio`} /><Kpi Icon={CurrencyDollar} value={formatCurrency(investment)} label="inversión demostrativa" note="No es una cifra oficial" /></div><div className="dashboard-grid"><section className="panel"><div className="panel-head"><div><h2>Distribución territorial</h2><p>{departments} departamentos representados</p></div><button className="text-button" onClick={() => setActive("gis")}>Abrir mapa</button></div><div className="bar-chart">{byDepartment.map(([department, count]) => <div className="bar-row" key={department}><span>{department}</span><div><i style={{ width: `${(count / max) * 100}%` }} /></div><strong>{count}</strong></div>)}</div></section><section className="panel"><div className="panel-head"><div><h2>Seguimiento demostrativo</h2><p>Proyectos almacenados en este navegador</p></div><button className="text-button" onClick={() => setActive("proyectos")}>Ver proyectos</button></div><div className="project-stack">{projects.slice(0, 4).map((project) => <div className="project-mini" key={project.id}><div><strong>{project.name}</strong><span>{project.stage} · próximo hito: {project.milestone}</span></div><DataState type={project.progress >= 60 ? "official" : "pending"}>{project.progress}%</DataState><div className="progress-track"><i style={{ width: `${project.progress}%` }} /></div></div>)}{!projects.length && <EmptyState icon={Briefcase} title="Sin proyectos" text="Cree un registro desde el módulo Proyectos." />}</div></section><section className="panel activity-panel"><div className="panel-head"><div><h2>Control documental</h2><p>Trazabilidad local de metadatos</p></div><button className="text-button" onClick={() => setActive("documentos")}>Gestionar</button></div><div className="summary-strip"><div><strong>{documents.length}</strong><span>documentos</span></div><div><strong>{documents.filter((doc) => doc.status === "Revisado").length}</strong><span>revisados</span></div><div><strong>{documents.filter((doc) => doc.status !== "Revisado").length}</strong><span>pendientes</span></div></div></section><section className="panel activity-panel"><div className="panel-head"><div><h2>Evaluación técnica</h2><p>Criterios configurables por parque</p></div><button className="text-button" onClick={() => setActive("evaluacion")}>Evaluar</button></div><div className="summary-strip">{parks.slice(0, 3).map((park) => { const summary = summarizeEvaluations(evaluations[park.id]); return <div key={park.id}><strong>{summary.score}%</strong><span>{park.short}</span></div>; })}</div></section></div></>;
+  const byDepartment = Object.entries(parks.reduce((acc, park) => ({ ...acc, [park.department]: (acc[park.department] || 0) + 1 }), {})).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  const surfaceByDepartment = Object.values(parks.reduce((acc, park) => { const current = acc[park.department] || { name: park.department, surface: 0 }; current.surface += Number(park.surface || 0); acc[park.department] = current; return acc; }, {})).sort((a, b) => b.surface - a.surface);
+  const byCharacter = Object.entries(parks.reduce((acc, park) => ({ ...acc, [park.character]: (acc[park.character] || 0) + 1 }), {})).map(([name, value]) => ({ name, value }));
+  const largestPark = [...parks].sort((a, b) => Number(b.surface) - Number(a.surface))[0];
+  const exportDashboard = () => downloadText("sigpi-parques.csv", toCsv(parks, [["Parque", "name"], ["Departamento", "department"], ["Distrito", "city"], ["Carácter", "character"], ["Superficie (ha)", "surface"], ["Resolución", "resolution"]]), "text/csv;charset=utf-8");
+  const openPark = (park) => { setSelected(park); setActive("gis"); };
+
+  return <section className="command-dashboard">
+    <div className="command-toolbar">
+      <div><span>Explorar territorio</span><strong>Parques industriales del Paraguay</strong></div>
+      <div className="toolbar-actions">
+        <button className="command-secondary" onClick={exportDashboard}><DownloadSimple size={17} /> Exportar reporte</button>
+        <button className="command-primary" onClick={() => setActive("gis")}><Crosshair size={17} /> Analizar territorio</button>
+      </div>
+    </div>
+
+    <div className="command-kpis">
+      <article><Factory size={24} weight="duotone" /><strong>{parks.length}</strong><span>parques en la base</span><DataState type="official">Base documental</DataState></article>
+      <article><MapTrifold size={24} weight="duotone" /><strong>{formatNumber(surface, { maximumFractionDigits: 2 })} ha</strong><span>superficie registrada</span><DataState type="calculated">Calculado</DataState></article>
+      <article><MapPin size={24} weight="duotone" /><strong>{departments}</strong><span>departamentos</span><DataState type="official">Base documental</DataState></article>
+      <article><Briefcase size={24} weight="duotone" /><strong>{projects.length}</strong><span>proyectos en seguimiento</span><DataState type="pending">Demostrativo</DataState></article>
+    </div>
+
+    <div className="command-stage">
+      <aside className="territory-controls">
+        <div className="dock-title"><Funnel size={17} /> Filtros territoriales</div>
+        <label>Departamento<select value={department} onChange={(event) => setDepartment(event.target.value)}>{paraguayDepartments.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label>Distrito<select defaultValue="Todos"><option>Todos</option>{[...new Set(filtered.map((park) => park.city))].map((city) => <option key={city}>{city}</option>)}</select></label>
+        <label>Estado<select defaultValue="Habilitado"><option>Todos</option><option>Habilitado</option><option>En análisis</option></select></label>
+        <label>Tipo de parque<select value={character} onChange={(event) => setCharacter(event.target.value)}>{parkCharacters.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <button className="command-primary wide" onClick={() => setActive("gis")}><TrendUp size={17} /> Analizar selección <ArrowRight size={15} /></button>
+        <div className="layer-controls">
+          <div className="dock-title"><Stack size={17} /> Capas del mapa</div>
+          <label className="layer-toggle"><input type="checkbox" checked={showMarkers} onChange={(event) => setShowMarkers(event.target.checked)} /><span>Parques industriales</span></label>
+          <label className="layer-toggle"><input type="checkbox" disabled /><span>Corredores logísticos</span><small>Pendiente</small></label>
+          <label className="layer-toggle"><input type="checkbox" disabled /><span>Polígonos catastrales</span><small>Pendiente</small></label>
+        </div>
+        <p className="dock-note">Los puntos corresponden a coordenadas WGS84 recuperadas de fichas DGFI. No representan polígonos prediales.</p>
+      </aside>
+
+      <div className="map-workspace">
+        <div className="map-top-controls"><div><button className={viewMode === "mapa" ? "active" : ""} onClick={() => setViewMode("mapa")}>Mapa</button><button className={viewMode === "lista" ? "active" : ""} onClick={() => setViewMode("lista")}>Lista</button></div><span>{filtered.length} ubicaciones</span></div>
+        {viewMode === "mapa" ? <CommandMap parks={filtered} selected={activePark} setSelected={setSelected} showMarkers={showMarkers} /> : <div className="map-list-view">{filtered.map((park) => <button key={park.id} onClick={() => setSelected(park)} className={activePark?.id === park.id ? "active" : ""}><MapPin size={18} /><span><strong>{park.short}</strong><small>{park.city} · {park.department}</small></span><b>{formatNumber(park.surface)} ha</b></button>)}</div>}
+        {activePark && <div className="selected-map-card"><div className="selected-pulse"><MapPin size={20} weight="fill" /></div><div><span>Selección activa</span><strong>{activePark.short}</strong><small>{activePark.city} · {activePark.department} · {formatNumber(activePark.surface)} ha</small></div><button onClick={() => openPark(activePark)} aria-label="Abrir ficha"><ArrowRight size={19} /></button></div>}
+      </div>
+
+      <aside className="insight-dock">
+        <div className="insight-tabs"><button className={rightMode === "oportunidades" ? "active" : ""} onClick={() => setRightMode("oportunidades")}>Oportunidades</button><button className={rightMode === "radar" ? "active" : ""} onClick={() => setRightMode("radar")}>Radar de parques</button></div>
+        {rightMode === "oportunidades" ? <div className="opportunities-panel">
+          <div className="opportunity-visual"><img src="./assets/oportunidad-industrial-paraguay.webp" alt="Visual demostrativo de un parque industrial moderno" /><div><DataState type="calculated">Lectura calculada</DataState><strong>Oportunidades territoriales</strong><span>Señales de la base; no constituyen evaluación de factibilidad.</span></div></div>
+          <button className="opportunity-row" onClick={() => setDepartment(byDepartment[0]?.name || "Todos")}><span><ChartBar size={19} /><b>Mayor concentración</b><small>{byDepartment[0]?.name}: {byDepartment[0]?.count} parques registrados</small></span><ArrowRight size={17} /></button>
+          <button className="opportunity-row" onClick={() => openPark(largestPark)}><span><Factory size={19} /><b>Mayor superficie registrada</b><small>{largestPark?.short}: {formatNumber(largestPark?.surface)} ha</small></span><ArrowRight size={17} /></button>
+          <button className="opportunity-row" onClick={() => setDepartment("Central")}><span><MapPin size={19} /><b>Nodo metropolitano</b><small>Central: {parks.filter((park) => park.department === "Central").length} parques documentados</small></span><ArrowRight size={17} /></button>
+        </div> : <div className="radar-list">{parks.slice(0, 6).map((park) => <button key={park.id} className={activePark?.id === park.id ? "active" : ""} onClick={() => setSelected(park)}><span><strong>{park.short}</strong><small>{park.city} · {park.department}</small></span><b>{formatNumber(park.surface)} ha</b></button>)}</div>}
+        {activePark && <div className="park-intel"><div className="park-intel-head"><div><span>Parque seleccionado</span><strong>{activePark.short}</strong></div><DataState type={activePark.sourceState?.includes("Histórico") ? "official" : "pending"}>{activePark.status}</DataState></div><dl><div><dt>Departamento</dt><dd>{activePark.department}</dd></div><div><dt>Distrito</dt><dd>{activePark.city}</dd></div><div><dt>Superficie</dt><dd>{formatNumber(activePark.surface)} ha</dd></div><div><dt>Carácter</dt><dd>{activePark.character}</dd></div></dl><button className="command-primary wide" onClick={() => openPark(activePark)}>Abrir ficha <ArrowRight size={16} /></button></div>}
+      </aside>
+    </div>
+
+    <div className="analytics-console">
+      <section><header><div><ChartBar size={18} /><span>Distribución territorial</span></div><small>Base documental</small></header><ResponsiveContainer width="100%" height={155}><BarChart data={byDepartment} layout="vertical" margin={{ top: 5, right: 12, bottom: 0, left: 4 }}><XAxis type="number" hide /><YAxis type="category" dataKey="name" width={92} tick={{ fill: "#a9bec5", fontSize: 10 }} axisLine={false} tickLine={false} /><ChartTooltip contentStyle={{ background: "#071d2a", border: "1px solid #19485d", color: "#fff" }} /><Bar dataKey="count" fill="#28dce3" radius={[0, 4, 4, 0]} barSize={11} /></BarChart></ResponsiveContainer></section>
+      <section><header><div><ChartDonut size={18} /><span>Tipología de parque</span></div><small>Base documental</small></header><div className="donut-wrap"><ResponsiveContainer width="58%" height={155}><PieChart><Pie data={byCharacter} dataKey="value" nameKey="name" innerRadius={42} outerRadius={63} paddingAngle={3}>{byCharacter.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}</Pie><ChartTooltip contentStyle={{ background: "#071d2a", border: "1px solid #19485d", color: "#fff" }} /></PieChart></ResponsiveContainer><div className="chart-legend">{byCharacter.map((entry, index) => <span key={entry.name}><i style={{ background: chartColors[index % chartColors.length] }} />{entry.name}<b>{entry.value}</b></span>)}</div></div></section>
+      <section><header><div><TrendUp size={18} /><span>Superficie registrada</span></div><small>Calculado</small></header><ResponsiveContainer width="100%" height={155}><BarChart data={surfaceByDepartment} margin={{ top: 8, right: 6, bottom: 0, left: -20 }}><CartesianGrid stroke="#12374a" vertical={false} /><XAxis dataKey="name" tick={{ fill: "#829ca8", fontSize: 9 }} axisLine={false} tickLine={false} /><YAxis tick={{ fill: "#829ca8", fontSize: 9 }} axisLine={false} tickLine={false} /><ChartTooltip formatter={(value) => [`${formatNumber(value)} ha`, "Superficie"]} contentStyle={{ background: "#071d2a", border: "1px solid #19485d", color: "#fff" }} /><Bar dataKey="surface" radius={[4, 4, 0, 0]}>{surfaceByDepartment.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}</Bar></BarChart></ResponsiveContainer></section>
+      <section className="pipeline-panel"><header><div><Briefcase size={18} /><span>Proyectos de inversión</span></div><DataState type="pending">Demostrativo</DataState></header>{projects.map((project) => <button key={project.id} onClick={() => setActive("proyectos")}><span><strong>{project.name}</strong><small>{project.stage} · {project.milestone}</small></span><b>{project.progress}%</b><i><em style={{ width: `${project.progress}%` }} /></i></button>)}</section>
+    </div>
+
+    <div className="command-status"><Info size={16} weight="fill" /><strong>Modo demostración con base histórica recuperada.</strong><span>Base MIC/DGFI · corte julio 2025. No certificada como vigente en 2026.</span><div><DataState type="official">Base documental</DataState><DataState type="calculated">Calculado</DataState><DataState type="pending">Demostrativo</DataState></div></div>
+  </section>;
 }
 
 function Filters({ department, setDepartment, character, setCharacter }) { return <div className="filter-row"><Funnel size={18} weight="bold" /><select value={department} onChange={(event) => setDepartment(event.target.value)} aria-label="Departamento">{paraguayDepartments.map((item) => <option key={item}>{item}</option>)}</select><select value={character} onChange={(event) => setCharacter(event.target.value)} aria-label="Carácter">{parkCharacters.map((item) => <option key={item}>{item}</option>)}</select></div>; }
@@ -91,7 +189,7 @@ function MapViewport({ parks }) {
 
 function MapCanvas({ parks, selected, setSelected, geoJson }) {
   const mappedParks = parks.filter(validCoordinates); const omitted = parks.length - mappedParks.length;
-  return <div className="map-canvas" aria-label="Mapa georreferenciado de parques industriales"><MapContainer center={[-23.45, -58.35]} zoom={5} minZoom={4} maxZoom={18} scrollWheelZoom className="leaflet-map"><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><MapViewport parks={mappedParks} />{geoJson && <GeoJSON data={geoJson} style={{ color: "#ae2b71", weight: 2, fillColor: "#ae2b71", fillOpacity: .24 }} pointToLayer={(_, latlng) => L.circleMarker(latlng, { radius: 6, color: "#ae2b71", fillOpacity: .65 })} />}{mappedParks.map((park) => { const active = selected?.id === park.id; const color = markerColor(park); const point = [Number(park.coordinates.lat), Number(park.coordinates.lon)]; return <CircleMarker key={park.id} center={point} radius={active ? 10 : 7} pathOptions={{ color: "#ffffff", weight: active ? 3 : 2, fillColor: active ? "#ae2b71" : color, fillOpacity: .95 }} eventHandlers={{ click: (event) => { setSelected(park); event.target._map.flyTo(point, Math.max(event.target._map.getZoom(), 12)); } }}><Tooltip direction="top" offset={[0, -7]}>{park.short}</Tooltip><Popup><strong>{park.name}</strong><br />{park.city}, {park.department}<br /><small>{park.coordinates.quality} · {park.coordinates.lat.toFixed(6)}, {park.coordinates.lon.toFixed(6)}</small></Popup></CircleMarker>; })}</MapContainer>{omitted > 0 && <div className="map-warning">{omitted} registro(s) sin coordenadas WGS84 no se muestran.</div>}<div className="map-scale">WGS84 · ubicación puntual · OpenStreetMap</div></div>;
+  return <div className="map-canvas" aria-label="Mapa georreferenciado de parques industriales"><MapContainer center={[-23.45, -58.35]} zoom={5} minZoom={4} maxZoom={18} scrollWheelZoom className="leaflet-map"><TileLayer attribution="Tiles &copy; Esri" maxZoom={19} url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}" /><MapViewport parks={mappedParks} />{geoJson && <GeoJSON data={geoJson} style={{ color: "#ae2b71", weight: 2, fillColor: "#ae2b71", fillOpacity: .24 }} pointToLayer={(_, latlng) => L.circleMarker(latlng, { radius: 6, color: "#ae2b71", fillOpacity: .65 })} />}{mappedParks.map((park) => { const active = selected?.id === park.id; const color = markerColor(park); const point = [Number(park.coordinates.lat), Number(park.coordinates.lon)]; return <CircleMarker key={park.id} center={point} radius={active ? 10 : 7} pathOptions={{ color: "#ffffff", weight: active ? 3 : 2, fillColor: active ? "#ae2b71" : color, fillOpacity: .95 }} eventHandlers={{ click: (event) => { setSelected(park); event.target._map.flyTo(point, Math.max(event.target._map.getZoom(), 12)); } }}><Tooltip direction="top" offset={[0, -7]}>{park.short}</Tooltip><Popup><strong>{park.name}</strong><br />{park.city}, {park.department}<br /><small>{park.coordinates.quality} · {park.coordinates.lat.toFixed(6)}, {park.coordinates.lon.toFixed(6)}</small></Popup></CircleMarker>; })}</MapContainer>{omitted > 0 && <div className="map-warning">{omitted} registro(s) sin coordenadas WGS84 no se muestran.</div>}<div className="map-scale">WGS84 · ubicación puntual · Esri</div></div>;
 }
 
 function GisView({ parks, selected, setSelected, geoState, setGeoState }) {
@@ -159,5 +257,5 @@ export function App() {
   const importBackup = (data) => { const importedParks = migrateParkCoordinates(data.parks); setParks(importedParks); setProjects(data.projects); setDocuments(Array.isArray(data.documents) ? data.documents : []); setEvaluations(data.evaluations || {}); setSelected(importedParks[0]); };
   const filters = { department, setDepartment, character, setCharacter };
   const sourceMessage = publicMode ? "Vista pública: módulos sin edición. La base histórica no está certificada como vigente en 2026." : "Gestión interna demostrativa: los cambios permanecen en localStorage y no se comparten.";
-  return <div className="app-shell"><Sidebar active={active} setActive={setActive} publicMode={publicMode} /><div className="workspace"><Header search={search} setSearch={setSearch} publicMode={publicMode} setPublicMode={setPublicMode} /><SourceBand message={sourceMessage} /><main className="main-content">{active === "dashboard" && <Dashboard parks={parks} projects={projects} documents={documents} evaluations={evaluations} setActive={setActive} />}{active === "parques" && <ParksView parks={parks} filteredParks={filteredParks} filters={filters} selectPark={(park) => { setSelected(park); setActive("gis"); }} onSave={savePark} onDelete={removePark} publicMode={publicMode} />}{active === "proyectos" && <ProjectsView projects={projects} parks={parks} onSave={saveProject} onDelete={removeProject} />}{active === "gis" && <GisView parks={filteredParks} selected={selected || filteredParks[0]} setSelected={setSelected} geoState={geoState} setGeoState={setGeoState} />}{active === "documentos" && <DocumentsView documents={documents} parks={parks} onSave={(doc) => setDocuments((items) => [...items, doc])} onDelete={removeDocument} />}{active === "evaluacion" && selected && <EvaluationView parks={parks} selected={selected} setSelected={setSelected} evaluations={evaluations} setEvaluations={setEvaluations} />}{active === "reportes" && <ReportsView parks={filteredParks} projects={projects} documents={documents} evaluations={evaluations} />}{active === "admin" && <AdminView state={{ parks, projects, documents, evaluations }} restoreDefaults={restoreDefaults} importBackup={importBackup} />}</main></div></div>;
+  return <div className={`app-shell ${active === "dashboard" ? "dashboard-shell" : ""}`}><Sidebar active={active} setActive={setActive} publicMode={publicMode} /><div className="workspace"><Header search={search} setSearch={setSearch} publicMode={publicMode} setPublicMode={setPublicMode} /><SourceBand message={sourceMessage} /><main className={`main-content ${active === "dashboard" ? "dashboard-content" : ""}`}>{active === "dashboard" && <Dashboard parks={parks} projects={projects} setActive={setActive} selected={selected} setSelected={setSelected} />}{active === "parques" && <ParksView parks={parks} filteredParks={filteredParks} filters={filters} selectPark={(park) => { setSelected(park); setActive("gis"); }} onSave={savePark} onDelete={removePark} publicMode={publicMode} />}{active === "proyectos" && <ProjectsView projects={projects} parks={parks} onSave={saveProject} onDelete={removeProject} />}{active === "gis" && <GisView parks={filteredParks} selected={selected || filteredParks[0]} setSelected={setSelected} geoState={geoState} setGeoState={setGeoState} />}{active === "documentos" && <DocumentsView documents={documents} parks={parks} onSave={(doc) => setDocuments((items) => [...items, doc])} onDelete={removeDocument} />}{active === "evaluacion" && selected && <EvaluationView parks={parks} selected={selected} setSelected={setSelected} evaluations={evaluations} setEvaluations={setEvaluations} />}{active === "reportes" && <ReportsView parks={filteredParks} projects={projects} documents={documents} evaluations={evaluations} />}{active === "admin" && <AdminView state={{ parks, projects, documents, evaluations }} restoreDefaults={restoreDefaults} importBackup={importBackup} />}</main></div></div>;
 }

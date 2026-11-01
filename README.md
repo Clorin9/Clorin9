@@ -1,6 +1,6 @@
 # SIGPI Paraguay
 
-Sistema Integral de Gestión de Parques Industriales del Paraguay. Versión web funcional recuperada desde el prototipo **SIGPI Opción C v0.1** y ampliada como **v0.3**.
+Sistema Integral de Gestión de Parques Industriales del Paraguay. Versión web funcional recuperada desde el prototipo **SIGPI Opción C v0.1** y ampliada como **v0.4**.
 
 ## Estado
 
@@ -13,7 +13,7 @@ Sistema Integral de Gestión de Parques Industriales del Paraguay. Versión web 
 
 ## Módulos funcionales
 
-1. Dashboard: indicadores calculados y distribución territorial.
+1. Dashboard: centro de comando territorial con mapa nacional, indicadores, gráficos Recharts, filtros, radar de parques y oportunidades territoriales calculadas.
 2. Parques: consulta, filtros y CRUD local en modo interno.
 3. Proyectos: cartera demostrativa, hitos, avance e inversión.
 4. Mapa GIS: marcadores, selección e importación validada de GeoJSON; renderiza polígonos WGS84 con proyección simplificada.
@@ -56,7 +56,7 @@ La primera publicación se realiza desde el repositorio público contenedor `Clo
 
 - Repositorio público: https://github.com/Clorin9/Clorin9
 - Aplicación pública: https://sigpi-paraguay-2026.condeclo.chatgpt.site
-- Estado: versión 1 desplegada con acceso público.
+- Estado: publicación pública activa; la versión v0.4 queda preparada por este repositorio y su build verificado.
 
 La ejecución de GitHub Actions aprobó instalación, build y pruebas. GitHub Pages no pudo activarse automáticamente porque esa configuración administrativa no está disponible para el conector; por ello, la versión pública se sirve mediante Sites con la misma compilación verificada.
 

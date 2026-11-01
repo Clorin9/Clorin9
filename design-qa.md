@@ -1,56 +1,61 @@
-# Design QA — SIGPI Option C
+# Design QA — SIGPI Centro de Comando Industrial v0.4
 
 ## Evidence
 
-- Source visual truth: `/workspace/scratch/6b1ae1bf02a6/generated_images/exec-73b7244e-ae1c-469f-bb66-8c9d67013c77.png`
-- Normalized source comparison: `/workspace/scratch/6b1ae1bf02a6/sigpi-prototype/source-option-c-normalized.png`
-- Browser-rendered implementation: `/workspace/scratch/6b1ae1bf02a6/sigpi-prototype/implementation-territory.jpg`
-- Source pixels: 1487 × 1058; normalized to 1363 × 936 with center crop.
-- Implementation pixels: 1363 × 936.
-- CSS viewport: 1363 × 936; deviceScaleFactor: 1.
-- State compared: desktop territorial workspace, active Territory navigation, layers panel open, park selected, data-provenance banner visible.
+- Source visual truth: `/workspace/scratch/2314196aa211/generated_images/exec-dce78538-ba66-4ec7-b8e5-48020b7cea5d.png`.
+- Additional selected component reference: `/workspace/scratch/2314196aa211/generated_images/exec-23b89841-a3ee-4121-bd70-b360064fd9b9.png` (`Oportunidades territoriales`).
+- Browser-rendered implementation: Cloud Browser tab 1, `http://terminal.local:4173/`, final capture emitted in the QA run on 2026-11-01. The cloud-browser capture API does not expose a local filesystem path.
+- Source pixels: 1488 × 1058.
+- Implementation capture pixels: 1365 × 930.
+- CSS viewport: 1365 × 930; deviceScaleFactor 1.
+- Density normalization: both references inspected at DPR 1; the comparison accounted for the implementation viewport being 128 px shorter.
+- State: dashboard, public mode, `Mapa`, `Oportunidades`, all territorial filters at default, Mcal. F. S. López selected.
 - Browser: Cloud Chrome, local Work Mode preview.
 
 ## Findings
 
-- No actionable P0, P1, or P2 fidelity issues remain.
-- The implementation preserves the selected direction's dark teal application shell, cyan active state, amber provenance banner, left navigation, floating layers panel, dominant map workspace, right-side decision/detail panel, compact institutional typography, thin dividers, and restrained elevation.
-- The source mock's fictional site evaluation was intentionally replaced with a national MIC register and an official park record. This is a product-content change required by the user's subsequent direction, not design drift.
-- The source mock's detailed multicriteria matrix and capacity table were moved into the linked technical-evaluation flow so the national register remains legible without inventing territorial evidence.
+- No actionable P0, P1 or P2 issues remain.
+- The implementation preserves the selected option 3 structure: compact icon rail, command header, left territorial controls, national map as the dominant surface, selected-park intelligence, four-part analytics console and dark cyan/amber control-room palette.
+- The user-requested option 2 component is implemented as a distinct `Oportunidades territoriales` tab. It includes a commercial image and three signals calculated only from the documented park base. The panel explicitly states that it is not a feasibility assessment.
+- The source mock included illustrative routes, corridors and several fictional park records. The implementation omits those unverified layers and uses the nine documented SIGPI records with corrected WGS84 coordinates. This is an intentional data-integrity constraint, not design drift.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: system sans-serif rendering closely matches the source's compact grotesk treatment. Hierarchy, weights, uppercase metadata, line height, and truncation were checked; no clipped app-specific copy was found.
-- Spacing and layout rhythm: the main shell, sidebar, provenance band, four metric cards, two-column map/detail grid, 4–6 px radii, thin borders, and compact control spacing are visually consistent. At 1363 × 936 the page scrolls vertically because the browser viewport is shorter than the 1058 px source; persistent navigation remains visible.
-- Colors and visual tokens: teal, cyan, amber, green, white, and cool-gray semantics map to the source. Contrast is sufficient for body text and status badges. No gradients were used.
-- Image quality and asset fidelity: the national map is a locally generated PNG based on `world-atlas` geometry, not CSS art or a placeholder. It is sharp at DPR 1. Phosphor icons provide a consistent icon family.
-- Copy and content: the screen identifies the July 2025 institutional source, distinguishes declared/calculated/pending data, and states that map points are district-level references rather than official polygons.
-- Responsiveness: desktop browser rendering passed. Tablet and mobile rules are implemented in CSS; device-specific browser capture remains a follow-up test gap.
-- Accessibility: navigation and filters use semantic buttons, labels, selects, alt text, visible focus states, and readable status text rather than color alone.
+- Fonts and typography: compact system sans-serif treatment matches the technical source direction. Uppercase command labels, dense metadata, weights, line heights and truncation are consistent. At 1365 px the long brand wraps to two lines but remains legible and aligned.
+- Spacing and layout rhythm: the three-column command stage, thin borders, compact 4 px radii, KPI strip and four-column analytics console reproduce the reference density. The page scrolls vertically at a 930 px-high viewport; persistent navigation and top controls remain available.
+- Colors and visual tokens: near-black navy, cyan, emerald, amber and cool gray map correctly to the source. Semantic states remain distinct: `Base documental`, `Calculado` and `Demostrativo`.
+- Image quality and asset fidelity: the opportunities image is a dedicated 1672 × 941 generated asset with a coherent industrial real-estate art direction. The map uses Esri World Imagery with Esri reference labels; no placeholder map or CSS-drawn geography is used. Phosphor provides the icon system.
+- Copy and content: labels, filters and actions are in Spanish. The dashboard shows 9 parks, 1.291,13 ha, 4 departments and 3 demonstrative projects, without presenting demonstrative values as official statistics.
+- Responsiveness: desktop rendering is browser-verified. CSS breakpoints cover 1260, 980 and 760 px. Mobile browser capture remains a P3 test gap because the local Playwright Chromium binary could not be downloaded in this environment.
+- Accessibility: semantic buttons and native selects are used; controls expose accessible names; focus states and text labels supplement color states.
 
-## Interaction verification
+## Primary interactions tested
 
-- Navigated from Territory to Parks.
-- Filtered by Alto Paraná and confirmed 4 records.
-- Opened ALGESA from the register and confirmed resolution 1599/2017.
-- Opened the technical-expedient flow and confirmed its seven-document checklist.
-- Checked browser logs. No application-origin errors were recorded; only unrelated Chrome extension metadata errors appeared.
-- Build and Sites packaging tests passed: 4 of 4.
+- Department filter selected `Alto Paraná`; the list returned ALGESA, Iruña, Santa Mónica and PTI Taiwán–Paraguay.
+- `Mapa` / `Lista` switch changed the central workspace.
+- `Oportunidades` / `Radar de parques` switch changed the right-side intelligence module.
+- `Exportar reporte` generated a CSV download.
+- The final national map displayed the full Paraguay extent with nine corrected markers.
+- Browser logs were checked. No application-origin errors were recorded; only unrelated Chrome-extension metadata errors were present.
+- Production build and 8 automated tests passed.
 
 ## Focused region comparison
 
-- Compared the header and provenance band, left navigation, floating layers card, map/marker field, right-side selected-object panel, and primary action at equal 1363 × 936 pixels.
-- The register-specific metric cards are an intentional addition required by the corrected brief. Their borders, type scale, icon style, and status tokens use the source visual language.
-
-## Follow-up polish
-
-- P3: capture tablet and phone breakpoints in a later QA pass.
-- P3: replace district-level marker positions with verified coordinates and official polygons when the MIC source data becomes available.
-- P3: add infrastructure layers only after a source and update responsibility are assigned.
+- Header: SIGPI Paraguay identity, command-center title, search, update date and public-mode control were compared.
+- Main stage: filter dock, full-country map, map/list controls, selected point and opportunities panel were compared.
+- Analytics console: departmental bars, park-type donut, registered-surface bars and demonstrative project pipeline were compared.
+- Focused comparison was necessary because the 1365 × 930 implementation capture renders small labels below the size needed for a full-view-only judgment.
 
 ## Comparison history
 
-- Initial browser pass found the unavailable `Layers` icon export during build. Replaced it with the matching Phosphor `Stack` icon; production build then passed.
-- Post-fix browser pass verified all primary interactions and produced the final 1363 × 936 comparison image.
+1. Initial pass found OpenStreetMap tile requests blocked with HTTP 403. CARTO was tested but required an API key. The final implementation was changed to Esri imagery and reference layers.
+2. Second pass found the map fitted only the parks' southeastern cluster and omitted the full national context. A dedicated Paraguay viewport was added.
+3. Second pass also found the SIGPI Paraguay identity absent from the header. It was restored without changing the command-center hierarchy.
+4. Final browser capture confirmed the complete Paraguay extent, corrected markers, opportunities panel, charts and primary interactions. No P0/P1/P2 findings remained.
+
+## Follow-up polish
+
+- P3: capture and inspect the 390 × 844 mobile layout when a browser binary is available.
+- P3: add verified road, logistics-corridor and cadastral layers only when authoritative geometries and update responsibility are defined.
 
 final result: passed

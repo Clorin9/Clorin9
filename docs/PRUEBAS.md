@@ -1,6 +1,6 @@
 # Registro de pruebas
 
-Fecha de ejecución: 21 de octubre de 2026.
+Fecha de ejecución: 1 de noviembre de 2026.
 
 ## Automatizadas
 
@@ -33,8 +33,9 @@ Los resultados ejecutados se actualizan al cierre de cada publicación. No se de
 - Pruebas automatizadas: 8 aprobadas, 0 fallidas.
 - Auditoría de dependencias: 0 vulnerabilidades conocidas reportadas por `npm audit`.
 - Búsqueda local de patrones de secretos: sin credenciales detectadas; el permiso `id-token: write` del workflow es configuración esperada de GitHub Pages.
-- QA visual original de Opción C: recuperado como evidencia histórica en `design-qa.md`.
-- QA E2E de la v0.3: preparado en `scripts/browser-smoke.mjs`, no ejecutado en este entorno porque el navegador cloud no accede al servidor local y la descarga del binario Chromium fue bloqueada por la red del entorno.
+- QA visual de la v0.4: aprobado contra la opción 3 y el componente `Oportunidades territoriales` de la opción 2; evidencia y correcciones en `design-qa.md`.
+- QA en navegador cloud: navegación, filtros, mapa/lista, radar/oportunidades y exportación CSV aprobados. El mapa se corrigió tras detectar bloqueo 403 de OpenStreetMap; la capa final usa Esri.
+- QA móvil automatizada: pendiente porque la descarga del binario Chromium local fue bloqueada por la red del entorno; los breakpoints responsive sí están implementados.
 - Repositorio público: verificado en `Clorin9/Clorin9`, rama `main`.
 - GitHub Actions: instalación, build y 8 pruebas aprobadas; el paso `configure-pages` falló porque GitHub Pages no estaba habilitado administrativamente.
 - Publicación alternativa: versión 1 desplegada correctamente mediante Sites.

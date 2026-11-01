@@ -11,6 +11,7 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 ## Durable product decisions
 
 - Visual direction selected by the user: Option C, technology-led territorial intelligence.
+- Dashboard v0.4 direction: option 3 `Centro de Comando Industrial` is the visual base. From option 2, incorporate only explicit components such as `Oportunidades territoriales`; do not merge the overall bright visual language.
 - Institutional source of record for this prototype: `Parques Industriales Autorizados MIC_JULIO 2025_JC.docx`.
 - The July 2025 document declares 9 parks approved and enabled by MIC resolution. Do not revert to the older public count of 8.
 - Show official/declared, calculated, outdated, pending-verification, and unavailable data as visibly different states.

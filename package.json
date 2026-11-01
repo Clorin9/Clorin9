@@ -1,6 +1,6 @@
 {
   "name": "sigpi-paraguay",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,6 +19,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-leaflet": "^5.0.0",
+    "recharts": "^3.10.1",
     "vite": "6.4.5"
   }
 }
