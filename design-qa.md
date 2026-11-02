@@ -1,4 +1,12 @@
-# Design QA — SIGPI Centro de Comando Industrial v0.4
+# Design QA — SIGPI Centro de Comando Industrial v0.5
+
+## Verificación v0.5 — 2 de noviembre de 2026
+
+- Calidad de datos: jerarquía, legibilidad, tabla, escala de completitud y trazabilidad verificadas en navegador a 1363 × 936 px.
+- Ficha integral: apertura por fila, campos documentales, fuente WGS84, control de calidad y acciones de mapa/impresión verificados.
+- GIS: registro de mapa base, puntos DGFI y GeoJSON importado/inactivo verificado; se mantiene explícita la precisión puntual y la ausencia de polígonos prediales.
+- Modo público/interno: controles de edición e importación ocultos en público y visibles en interno.
+- Responsive: reglas específicas a 900 px y 760 px revisadas en compilación; la infraestructura de navegador no permitió fijar un viewport móvil en esta ejecución.
 
 ## Evidence
 

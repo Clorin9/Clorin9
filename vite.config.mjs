@@ -7,6 +7,15 @@ export default defineConfig({
     (process.env.GITHUB_ACTIONS ? "/sigpi-paraguay/" : "/"),
   build: {
     outDir: "dist/client",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          maps: ["leaflet", "react-leaflet"],
+          charts: ["recharts"],
+          icons: ["@phosphor-icons/react"],
+        },
+      },
+    },
   },
   optimizeDeps: {
     include: ["react", "react-dom/client"],
