@@ -1,8 +1,15 @@
 # Inventario de módulos y pendientes
 
-| Módulo | Estado v0.5 | Persistencia | Pendiente operativo |
+## Incorporado en v0.6
+
+- Interfaz de centro de comando con columna territorial, mapa central y radar lateral.
+- Agente SIGPI IA activo en modo local, con filtros, comparación, selección y reporte CSV.
+- Conector configurable para backend GPT seguro.
+- Dos visualizaciones hiperrealistas 3D rotuladas como conceptos, no como evidencia documental.
+
+| Módulo | Estado v0.6 | Persistencia | Pendiente operativo |
 |---|---|---|---|
-| Dashboard | Centro de comando, mapa, gráficos, filtros, radar y oportunidades | Calculado en navegador | Conectar indicadores oficiales versionados |
+| Dashboard | Centro de comando, mapa, gráficos, filtros, radar, oportunidades, visuales 3D y agente local | Calculado en navegador | Conectar indicadores oficiales versionados y backend GPT seguro |
 | Parques | Consulta, ficha integral, filtros, CRUD e importación CSV/XLSX validada | localStorage | API, roles, validación institucional y coordenadas oficiales |
 | Proyectos | CRUD, hitos, etapas, inversión y avance | localStorage | Flujo de aprobación, responsables y cronograma detallado |
 | GIS | Leaflet, marcadores WGS84 verificados, registro de capas, GeoJSON y polígonos | Sesión del navegador | PostGIS, CRS y capas oficiales |

@@ -1,6 +1,6 @@
 # Registro de pruebas
 
-Fecha de ejecución: 2 de noviembre de 2026.
+Fecha de ejecución: 5 de noviembre de 2026.
 
 ## Automatizadas
 
@@ -39,6 +39,8 @@ Los resultados ejecutados se actualizan al cierre de cada publicación. No se de
 - Búsqueda local de patrones de secretos: sin credenciales detectadas; el permiso `id-token: write` del workflow es configuración esperada de GitHub Pages.
 - QA visual de la v0.4: aprobado contra la opción 3 y el componente `Oportunidades territoriales` de la opción 2; evidencia y correcciones en `design-qa.md`.
 - QA visual de la v0.5: aprobados en navegador cloud el módulo de calidad, la ficha integral, la separación público/interno y el registro de capas GIS. La selección automatizada de archivos locales quedó cubierta por pruebas unitarias porque el navegador cloud no monta rutas del workspace.
+- QA visual de la v0.6: aprobados en navegador cloud el centro de comando, los dos visuales 3D, la columna territorial, el radar lateral y la respuesta activa del agente SIGPI IA a una comparación por superficie.
+- Prueba Playwright local: no ejecutada por ausencia del binario Chromium en el entorno; no se declara aprobada. Fue sustituida por QA del build servido en el navegador cloud.
 - QA en navegador cloud: navegación, filtros, mapa/lista, radar/oportunidades y exportación CSV aprobados. El mapa se corrigió tras detectar bloqueo 403 de OpenStreetMap; la capa final usa Esri.
 - QA móvil automatizada: pendiente porque la descarga del binario Chromium local fue bloqueada por la red del entorno; los breakpoints responsive sí están implementados.
 - Repositorio público: verificado en `Clorin9/Clorin9`, rama `main`.

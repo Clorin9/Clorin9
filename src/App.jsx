@@ -6,7 +6,7 @@ import {
   ArrowClockwise, ArrowRight, Briefcase, Buildings, ChartBar, ChartDonut, CheckCircle, ClipboardText, Crosshair,
   CurrencyDollar, Database, DownloadSimple, Eye, EyeSlash, Factory, FileText,
   FolderOpen, Funnel, Gear, Info, ListChecks, LockKey, MagnifyingGlass,
-  MapPin, MapTrifold, PencilSimple, Plus, Printer, ShieldCheck, SquaresFour, Stack, Trash, TrendUp, UploadSimple,
+  MapPin, MapTrifold, Microphone, Paperclip, PaperPlaneTilt, PencilSimple, Plus, Printer, Robot, ShieldCheck, Sparkle, SquaresFour, Stack, Target, Trash, TrendUp, UploadSimple,
   UsersThree, Warning, X,
 } from "@phosphor-icons/react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from "recharts";
@@ -32,11 +32,11 @@ function Modal({ title, children, onClose }) {
 }
 
 function Sidebar({ active, setActive, publicMode }) {
-  return <aside className="sidebar"><div className="brand"><MapTrifold size={30} weight="duotone" /><div><strong>SIGPI</strong><span>Paraguay</span></div></div><nav aria-label="Navegación principal">{navItems.filter(([, , , isPublic]) => !publicMode || isPublic).map(([id, label, Icon]) => <button key={id} className={active === id ? "active" : ""} onClick={() => setActive(id)} title={label}><Icon size={22} weight={active === id ? "fill" : "regular"} /><span>{label}</span></button>)}</nav><div className="sidebar-footer"><DataState type={publicMode ? "calculated" : "pending"}>{publicMode ? "Público" : "Interno"}</DataState><span>Base {sourceCut}</span><small>v0.5</small></div></aside>;
+  return <aside className="sidebar"><div className="brand"><MapTrifold size={30} weight="duotone" /><div><strong>SIGPI</strong><span>Paraguay</span></div></div><nav aria-label="Navegación principal">{navItems.filter(([, , , isPublic]) => !publicMode || isPublic).map(([id, label, Icon]) => <button key={id} className={active === id ? "active" : ""} onClick={() => setActive(id)} title={label}><Icon size={22} weight={active === id ? "fill" : "regular"} /><span>{label}</span></button>)}</nav><div className="sidebar-footer"><DataState type={publicMode ? "calculated" : "pending"}>{publicMode ? "Público" : "Interno"}</DataState><span>Base {sourceCut}</span><small>v0.6</small></div></aside>;
 }
 
-function Header({ search, setSearch, publicMode, setPublicMode }) {
-  return <header className="topbar"><div className="topbar-title"><strong>SIGPI Paraguay · Centro de Comando Industrial</strong><span>Inteligencia territorial para la inversión industrial</span></div><label className="search-control"><MagnifyingGlass size={18} weight="bold" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar parques, proyectos o distritos…" aria-label="Buscar" />{search && <button className="icon-button" onClick={() => setSearch("")} aria-label="Limpiar búsqueda"><X size={16} /></button>}</label><div className="source-date"><span>Actualización de interfaz</span><strong>2 nov 2026</strong></div><button className="mode-switch" onClick={() => setPublicMode((value) => !value)} title="Alternar vista pública y gestión local demostrativa">{publicMode ? <Eye size={18} /> : <EyeSlash size={18} />}<span>{publicMode ? "Público" : "Interno demo"}</span></button></header>;
+function Header({ search, setSearch, publicMode, setPublicMode, openAgent }) {
+  return <header className="topbar"><div className="topbar-title"><strong>SIGPI Paraguay · Centro de Comando Industrial</strong><span>Inteligencia territorial para la inversión industrial</span></div><label className="search-control"><MagnifyingGlass size={18} weight="bold" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar parques, proyectos o distritos…" aria-label="Buscar" />{search && <button className="icon-button" onClick={() => setSearch("")} aria-label="Limpiar búsqueda"><X size={16} /></button>}</label><button className="agent-launcher" onClick={openAgent}><Sparkle size={18} weight="fill" /><span>Agente IA</span><i title="Disponible" /></button><div className="source-date"><span>Actualización</span><strong>5 nov 2026</strong></div><button className="mode-switch" onClick={() => setPublicMode((value) => !value)} title="Alternar vista pública y gestión local demostrativa">{publicMode ? <Eye size={18} /> : <EyeSlash size={18} />}<span>{publicMode ? "Público" : "Interno demo"}</span></button></header>;
 }
 
 function SourceBand({ message }) { return <section className="source-band"><div><Info size={18} weight="fill" /> Modo demostración con base histórica recuperada</div><span>{message}</span><div className="state-legend"><DataState type="official">Histórico</DataState><DataState type="calculated">Calculado</DataState><DataState type="pending">Pendiente</DataState></div></section>; }
@@ -69,12 +69,74 @@ function CommandMap({ parks, selected, setSelected, showMarkers = true }) {
   </div>;
 }
 
-function Dashboard({ parks, projects, setActive, selected, setSelected }) {
+function SigpiAgent({ parks, selected, setSelected, department, setDepartment, open, setOpen }) {
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [messages, setMessages] = useState([{ role: "agent", text: "Puedo comparar parques, aplicar filtros territoriales, detectar señales de oportunidad y generar un reporte con la base visible." }]);
+  const agentApi = import.meta.env.VITE_SIGPI_AGENT_API_URL || "";
+  const normalized = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const departments = [...new Set(parks.map((park) => park.department))];
+
+  const localAnswer = (query) => {
+    const term = normalized(query);
+    const mentionedDepartment = departments.find((item) => term.includes(normalized(item)));
+    const mentionedPark = parks.find((park) => term.includes(normalized(park.short)) || term.includes(normalized(park.name)));
+    if (mentionedPark) {
+      setSelected(mentionedPark);
+      return `${mentionedPark.short}: ${mentionedPark.city}, ${mentionedPark.department}; ${formatNumber(mentionedPark.surface)} ha registradas; carácter ${mentionedPark.character}. Fuente: ${mentionedPark.sourceState}.`;
+    }
+    if (mentionedDepartment) {
+      const matches = parks.filter((park) => park.department === mentionedDepartment);
+      const surface = matches.reduce((sum, park) => sum + Number(park.surface || 0), 0);
+      setDepartment(mentionedDepartment);
+      return `Filtro aplicado a ${mentionedDepartment}: ${matches.length} parque(s) y ${formatNumber(surface)} ha registradas en la base. Resultado calculado; no constituye recomendación de inversión.`;
+    }
+    if (term.includes("compar")) {
+      const comparison = [...parks].sort((a, b) => Number(b.surface) - Number(a.surface)).slice(0, 3);
+      return `Comparación por superficie registrada: ${comparison.map((park) => `${park.short} (${formatNumber(park.surface)} ha)`).join("; ")}. Para decidir ubicación deben incorporarse infraestructura, costos, permisos y demanda.`;
+    }
+    if (term.includes("oportun") || term.includes("conviene") || term.includes("localizar")) {
+      const counts = Object.entries(parks.reduce((acc, park) => ({ ...acc, [park.department]: (acc[park.department] || 0) + 1 }), {})).sort((a, b) => b[1] - a[1]);
+      return `Lectura calculada: ${counts[0]?.[0]} presenta la mayor concentración de la base (${counts[0]?.[1]} parques). Es una señal territorial preliminar, no una evaluación de factibilidad ni un dato oficial vigente en 2026.`;
+    }
+    if (term.includes("reporte")) {
+      downloadText("sigpi-reporte-agente.csv", toCsv(parks, [["Parque", "name"], ["Departamento", "department"], ["Distrito", "city"], ["Superficie ha", "surface"], ["Carácter", "character"], ["Fuente", "sourceState"]]), "text/csv;charset=utf-8");
+      return `Reporte CSV generado con ${parks.length} registros visibles. Los datos mantienen su clasificación documental, calculada o pendiente.`;
+    }
+    if (term.includes("filtro") || term.includes("mapa")) {
+      setDepartment("Todos");
+      return "Mapa restablecido a todos los departamentos. Puede indicar un departamento o el nombre de un parque para enfocar el análisis.";
+    }
+    return selected ? `Contexto activo: ${selected.short}, ${selected.city}, ${selected.department}, ${formatNumber(selected.surface)} ha. Puede pedirme comparar parques, detectar oportunidades o generar un reporte.` : "Indique un parque, departamento o tipo de análisis.";
+  };
+
+  const ask = async (query) => {
+    const clean = String(query || "").trim(); if (!clean || busy) return;
+    setMessages((items) => [...items, { role: "user", text: clean }]); setInput(""); setBusy(true);
+    try {
+      let answer;
+      if (agentApi) {
+        const response = await fetch(agentApi, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: clean, selectedParkId: selected?.id, parks }) });
+        if (!response.ok) throw new Error("Servicio GPT no disponible");
+        const payload = await response.json(); answer = payload.answer || payload.message;
+      }
+      if (!answer) answer = localAnswer(clean);
+      setMessages((items) => [...items, { role: "agent", text: answer }]);
+    } catch {
+      setMessages((items) => [...items, { role: "agent", text: `${localAnswer(clean)} El servicio GPT externo no respondió; se utilizó el motor local demostrativo.` }]);
+    } finally { setBusy(false); }
+  };
+
+  if (!open) return <button className="agent-fab" onClick={() => setOpen(true)} aria-label="Abrir agente SIGPI"><Robot size={23} weight="duotone" /><i /></button>;
+  return <section className="sigpi-agent" aria-label="SIGPI IA, agente activo"><header><div className="agent-orb"><Sparkle size={20} weight="fill" /></div><div><strong>SIGPI IA · Agente GPT</strong><span><i /> {agentApi ? "GPT conectado" : "Motor local demo"}</span></div><button onClick={() => setOpen(false)} aria-label="Minimizar agente">—</button></header><div className="agent-context"><span><MapTrifold size={13} /> Mapa</span><span><Target size={13} /> Radar</span><span><Database size={13} /> Base histórica</span></div><div className="agent-messages" aria-live="polite">{messages.slice(-3).map((message, index) => <div key={`${message.role}-${index}`} className={message.role}><b>{message.role === "agent" ? "IA" : "Usted"}</b><p>{message.text}</p></div>)}{busy && <div className="agent-thinking"><i /><i /><i /><span>Analizando mapa y registros…</span></div>}</div><div className="agent-suggestions"><button onClick={() => ask("Comparar parques por superficie")}>Comparar parques</button><button onClick={() => ask("Detectar oportunidades territoriales")}>Detectar oportunidades</button><button onClick={() => ask("Generar reporte")}>Generar reporte</button></div><form onSubmit={(event) => { event.preventDefault(); ask(input); }}><button type="button" aria-label="Adjuntar contexto"><Paperclip size={16} /></button><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Pregunte sobre parques, territorio o inversión…" aria-label="Consulta al agente" /><button type="button" aria-label="Entrada por voz"><Microphone size={16} /></button><button className="agent-send" aria-label="Enviar consulta"><PaperPlaneTilt size={17} weight="fill" /></button></form><footer><Info size={12} /><span>Análisis asistido; no constituye dictamen ni dato oficial.</span></footer></section>;
+}
+
+function Dashboard({ parks, projects, setActive, selected, setSelected, agentOpen, setAgentOpen }) {
   const [department, setDepartment] = useState("Todos");
   const [character, setCharacter] = useState("Todos");
   const [showMarkers, setShowMarkers] = useState(true);
   const [viewMode, setViewMode] = useState("mapa");
-  const [rightMode, setRightMode] = useState("oportunidades");
+  const [rightMode, setRightMode] = useState("radar");
 
   const filtered = useMemo(() => parks.filter((park) => (department === "Todos" || park.department === department) && (character === "Todos" || park.character === character)), [parks, department, character]);
   const activePark = filtered.find((park) => park.id === selected?.id) || filtered[0] || parks[0];
@@ -95,6 +157,17 @@ function Dashboard({ parks, projects, setActive, selected, setSelected }) {
         <button className="command-primary" onClick={() => setActive("gis")}><Crosshair size={17} /> Analizar territorio</button>
       </div>
     </div>
+
+    <section className="vision-showcase" aria-label="Visualizaciones conceptuales 3D">
+      <article className="vision-card vision-aerial">
+        <img src="./assets/sigpi-parque-3d-aereo.webp" alt="Visualización conceptual hiperrealista 3D de un parque industrial sostenible" />
+        <div><DataState type="calculated">Concepto 3D</DataState><span>Visión industrial Paraguay</span><strong>Infraestructura competitiva, conectada y sostenible</strong><button onClick={() => setActive("gis")}>Explorar mapa <ArrowRight size={15} /></button></div>
+      </article>
+      <article className="vision-card vision-corridor">
+        <img src="./assets/sigpi-corredor-3d.webp" alt="Visualización conceptual hiperrealista 3D de un corredor industrial inteligente" />
+        <div><DataState type="calculated">Visual conceptual</DataState><strong>Oportunidades territoriales</strong><button onClick={() => setRightMode("oportunidades")}>Ver señales calculadas <ArrowRight size={15} /></button></div>
+      </article>
+    </section>
 
     <div className="command-kpis">
       <article><Factory size={24} weight="duotone" /><strong>{parks.length}</strong><span>parques en la base</span><DataState type="official">Base documental</DataState></article>
@@ -121,19 +194,21 @@ function Dashboard({ parks, projects, setActive, selected, setSelected }) {
       </aside>
 
       <div className="map-workspace">
+        <div className="command-ribbon"><span><Stack size={15} /> Escenario: <b>Inversión industrial</b></span><span><CheckCircle size={15} /> Calidad de datos: <b>Alta</b></span><span><ArrowClockwise size={15} /> Base: <b>julio 2025</b></span></div>
         <div className="map-top-controls"><div><button className={viewMode === "mapa" ? "active" : ""} onClick={() => setViewMode("mapa")}>Mapa</button><button className={viewMode === "lista" ? "active" : ""} onClick={() => setViewMode("lista")}>Lista</button></div><span>{filtered.length} ubicaciones</span></div>
         {viewMode === "mapa" ? <CommandMap parks={filtered} selected={activePark} setSelected={setSelected} showMarkers={showMarkers} /> : <div className="map-list-view">{filtered.map((park) => <button key={park.id} onClick={() => setSelected(park)} className={activePark?.id === park.id ? "active" : ""}><MapPin size={18} /><span><strong>{park.short}</strong><small>{park.city} · {park.department}</small></span><b>{formatNumber(park.surface)} ha</b></button>)}</div>}
         {activePark && <div className="selected-map-card"><div className="selected-pulse"><MapPin size={20} weight="fill" /></div><div><span>Selección activa</span><strong>{activePark.short}</strong><small>{activePark.city} · {activePark.department} · {formatNumber(activePark.surface)} ha</small></div><button onClick={() => openPark(activePark)} aria-label="Abrir ficha"><ArrowRight size={19} /></button></div>}
+        <SigpiAgent parks={parks} selected={activePark} setSelected={setSelected} department={department} setDepartment={setDepartment} open={agentOpen} setOpen={setAgentOpen} />
       </div>
 
       <aside className="insight-dock">
-        <div className="insight-tabs"><button className={rightMode === "oportunidades" ? "active" : ""} onClick={() => setRightMode("oportunidades")}>Oportunidades</button><button className={rightMode === "radar" ? "active" : ""} onClick={() => setRightMode("radar")}>Radar de parques</button></div>
+        <div className="insight-tabs"><button className={rightMode === "radar" ? "active" : ""} onClick={() => setRightMode("radar")}>Radar de parques</button><button className={rightMode === "oportunidades" ? "active" : ""} onClick={() => setRightMode("oportunidades")}>Oportunidades</button></div>
         {rightMode === "oportunidades" ? <div className="opportunities-panel">
           <div className="opportunity-visual"><img src="./assets/oportunidad-industrial-paraguay.webp" alt="Visual demostrativo de un parque industrial moderno" /><div><DataState type="calculated">Lectura calculada</DataState><strong>Oportunidades territoriales</strong><span>Señales de la base; no constituyen evaluación de factibilidad.</span></div></div>
           <button className="opportunity-row" onClick={() => setDepartment(byDepartment[0]?.name || "Todos")}><span><ChartBar size={19} /><b>Mayor concentración</b><small>{byDepartment[0]?.name}: {byDepartment[0]?.count} parques registrados</small></span><ArrowRight size={17} /></button>
           <button className="opportunity-row" onClick={() => openPark(largestPark)}><span><Factory size={19} /><b>Mayor superficie registrada</b><small>{largestPark?.short}: {formatNumber(largestPark?.surface)} ha</small></span><ArrowRight size={17} /></button>
           <button className="opportunity-row" onClick={() => setDepartment("Central")}><span><MapPin size={19} /><b>Nodo metropolitano</b><small>Central: {parks.filter((park) => park.department === "Central").length} parques documentados</small></span><ArrowRight size={17} /></button>
-        </div> : <div className="radar-list">{parks.slice(0, 6).map((park) => <button key={park.id} className={activePark?.id === park.id ? "active" : ""} onClick={() => setSelected(park)}><span><strong>{park.short}</strong><small>{park.city} · {park.department}</small></span><b>{formatNumber(park.surface)} ha</b></button>)}</div>}
+        </div> : <div className="radar-list">{parks.slice(0, 6).map((park, index) => <button key={park.id} className={activePark?.id === park.id ? "active" : ""} onClick={() => setSelected(park)}><em>{index + 1}</em><span><strong>{park.short}</strong><small>{park.city} · {park.department}</small></span><b>{formatNumber(park.surface)} ha</b></button>)}</div>}
         {activePark && <div className="park-intel"><div className="park-intel-head"><div><span>Parque seleccionado</span><strong>{activePark.short}</strong></div><DataState type={activePark.sourceState?.includes("Histórico") ? "official" : "pending"}>{activePark.status}</DataState></div><dl><div><dt>Departamento</dt><dd>{activePark.department}</dd></div><div><dt>Distrito</dt><dd>{activePark.city}</dd></div><div><dt>Superficie</dt><dd>{formatNumber(activePark.surface)} ha</dd></div><div><dt>Carácter</dt><dd>{activePark.character}</dd></div></dl><button className="command-primary wide" onClick={() => openPark(activePark)}>Abrir ficha <ArrowRight size={16} /></button></div>}
       </aside>
     </div>
@@ -270,6 +345,7 @@ export function App() {
   const [active, setActive] = useState("dashboard"); const [selected, setSelected] = useState(() => parks[0]);
   const [department, setDepartment] = useState("Todos"); const [character, setCharacter] = useState("Todos"); const [search, setSearch] = useState("");
   const [publicMode, setPublicMode] = useState(true); const [geoState, setGeoState] = useState({ data: null, name: "", error: "", featureCount: 0, geometryTypes: [] });
+  const [agentOpen, setAgentOpen] = useState(true);
   useEffect(() => { saveLocal("sigpi.parks", parks); }, [parks]); useEffect(() => { saveLocal("sigpi.projects", projects); }, [projects]); useEffect(() => { saveLocal("sigpi.documents", documents); }, [documents]); useEffect(() => { saveLocal("sigpi.evaluations", evaluations); }, [evaluations]);
   useEffect(() => { if (publicMode && !navItems.find(([id]) => id === active)?.[3]) setActive("dashboard"); }, [publicMode, active]);
   useEffect(() => { if (!parks.some((park) => park.id === selected?.id)) setSelected(parks[0]); }, [parks, selected]);
@@ -284,5 +360,5 @@ export function App() {
   const importBackup = (data) => { const importedParks = migrateParkCoordinates(data.parks); setParks(importedParks); setProjects(data.projects); setDocuments(Array.isArray(data.documents) ? data.documents : []); setEvaluations(data.evaluations || {}); setSelected(importedParks[0]); };
   const filters = { department, setDepartment, character, setCharacter };
   const sourceMessage = publicMode ? "Vista pública: módulos sin edición. La base histórica no está certificada como vigente en 2026." : "Gestión interna demostrativa: los cambios permanecen en localStorage y no se comparten.";
-  return <div className={`app-shell ${active === "dashboard" ? "dashboard-shell" : ""}`}><Sidebar active={active} setActive={setActive} publicMode={publicMode} /><div className="workspace"><Header search={search} setSearch={setSearch} publicMode={publicMode} setPublicMode={setPublicMode} /><SourceBand message={sourceMessage} /><main className={`main-content ${active === "dashboard" ? "dashboard-content" : ""}`}>{active === "dashboard" && <Dashboard parks={parks} projects={projects} setActive={setActive} selected={selected} setSelected={setSelected} />}{active === "parques" && <ParksView parks={parks} filteredParks={filteredParks} filters={filters} selectPark={(park) => { setSelected(park); setActive("gis"); }} onSave={savePark} onDelete={removePark} onImport={importParks} publicMode={publicMode} />}{active === "proyectos" && <ProjectsView projects={projects} parks={parks} onSave={saveProject} onDelete={removeProject} />}{active === "gis" && <GisView parks={filteredParks} selected={selected || filteredParks[0]} setSelected={setSelected} geoState={geoState} setGeoState={setGeoState} />}{active === "calidad" && <DataQualityView parks={parks} setSelected={setSelected} setActive={setActive} />}{active === "documentos" && <DocumentsView documents={documents} parks={parks} onSave={(doc) => setDocuments((items) => [...items, doc])} onDelete={removeDocument} />}{active === "evaluacion" && selected && <EvaluationView parks={parks} selected={selected} setSelected={setSelected} evaluations={evaluations} setEvaluations={setEvaluations} />}{active === "reportes" && <ReportsView parks={filteredParks} projects={projects} documents={documents} evaluations={evaluations} />}{active === "admin" && <AdminView state={{ parks, projects, documents, evaluations }} restoreDefaults={restoreDefaults} importBackup={importBackup} />}</main></div></div>;
+  return <div className={`app-shell ${active === "dashboard" ? "dashboard-shell" : ""}`}><Sidebar active={active} setActive={setActive} publicMode={publicMode} /><div className="workspace"><Header search={search} setSearch={setSearch} publicMode={publicMode} setPublicMode={setPublicMode} openAgent={() => { setActive("dashboard"); setAgentOpen(true); }} /><SourceBand message={sourceMessage} /><main className={`main-content ${active === "dashboard" ? "dashboard-content" : ""}`}>{active === "dashboard" && <Dashboard parks={parks} projects={projects} setActive={setActive} selected={selected} setSelected={setSelected} agentOpen={agentOpen} setAgentOpen={setAgentOpen} />}{active === "parques" && <ParksView parks={parks} filteredParks={filteredParks} filters={filters} selectPark={(park) => { setSelected(park); setActive("gis"); }} onSave={savePark} onDelete={removePark} onImport={importParks} publicMode={publicMode} />}{active === "proyectos" && <ProjectsView projects={projects} parks={parks} onSave={saveProject} onDelete={removeProject} />}{active === "gis" && <GisView parks={filteredParks} selected={selected || filteredParks[0]} setSelected={setSelected} geoState={geoState} setGeoState={setGeoState} />}{active === "calidad" && <DataQualityView parks={parks} setSelected={setSelected} setActive={setActive} />}{active === "documentos" && <DocumentsView documents={documents} parks={parks} onSave={(doc) => setDocuments((items) => [...items, doc])} onDelete={removeDocument} />}{active === "evaluacion" && selected && <EvaluationView parks={parks} selected={selected} setSelected={setSelected} evaluations={evaluations} setEvaluations={setEvaluations} />}{active === "reportes" && <ReportsView parks={filteredParks} projects={projects} documents={documents} evaluations={evaluations} />}{active === "admin" && <AdminView state={{ parks, projects, documents, evaluations }} restoreDefaults={restoreDefaults} importBackup={importBackup} />}</main></div></div>;
 }
